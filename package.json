@@ -1,0 +1,15 @@
+{
+  "name": "my-n8n-workflows",
+  "version": "1.0.0",
+  "description": "Collection of n8n workflows",
+  "main": "index.js",
+  "scripts": {
+    "create-safe": "node create-safe-workflow.js",
+    "restore-env": "node restore-from-env.js"
+  },
+  "devDependencies": {
+    "dotenv": "^16.6.1"
+  },
+  "author": "",
+  "license": "MIT"
+}

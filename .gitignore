@@ -29,3 +29,14 @@ yarn-error.log*
 # Temporary files
 *.tmp
 *.temp
+
+# N8N workflows with sensitive data
+workflows/workflow_translate*.json
+workflows/*-restored.json
+workflows/*-private.json
+
+# Node modules
+node_modules/
+
+# npm
+package-lock.json
