@@ -1,0 +1,384 @@
+{
+  "name": "workflow get ALL ID+NAME file .srt in folder of drive",
+  "nodes": [
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "searchMethod": "query",
+        "queryString": "=name = '{{ $json[\"chatInput\"] }}'",
+        "filter": {},
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        300,
+        0
+      ],
+      "id": "97d76a82-99cc-4a85-8d6f-3c0ff221ebb4",
+      "name": " get id folder ",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "KrkxuVujgZYvh2Q2",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "searchMethod": "query",
+        "queryString": "='{{ $json.id }}' in parents  \nand name contains '.srt'  \n\n",
+        "filter": {},
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        540,
+        0
+      ],
+      "id": "07c8544c-3785-4e40-8a3e-701bd82867c6",
+      "name": "get ALL ID+NAME file .srt in folder",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "KrkxuVujgZYvh2Q2",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2b5b763b-1dfe-436e-89af-39ba2f001363",
+              "name": "id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "565ad50b-71be-415a-a734-d4f35eb3ac0c",
+              "name": "name",
+              "value": "={{ $json.name }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        760,
+        0
+      ],
+      "id": "8e9a9e5d-6671-4467-8c0a-d73f7b44cf07",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-pro",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        720,
+        540
+      ],
+      "id": "346e210f-9794-47aa-a4e7-9d15b5dcfa2d",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "uzAQVLuS4eLLaCZX",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1040,
+        0
+      ],
+      "id": "9f0d50dd-8680-4938-b316-879be82a6492",
+      "name": "dowload file .srt",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "KrkxuVujgZYvh2Q2",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Lấy binary file đầu vào và chuyển thành text\nconst binaryData = $input.first().binary.data;\nconst textContent = Buffer.from(binaryData.data, binaryData.mimeType.includes('base64') ? 'base64' : 'utf8').toString('utf8');\n\nreturn [{json: { content: textContent }}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        280,
+        280
+      ],
+      "id": "2e51fe21-0358-4ec6-85d4-ec56763743c2",
+      "name": "convert file binary to text 1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const base64Data = items[0].json.content;\nconst buffer = Buffer.from(base64Data, 'base64');\nconst srtText = buffer.toString('utf8');\nreturn [{ json: { srtText } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        500,
+        280
+      ],
+      "id": "2e44b902-38f2-484f-8abf-afe31657f6ef",
+      "name": "convert file binary to text 2"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Translate the following subtitle block to Vietnamese. Keep the SRT numbering and timestamp. Only translate the English sentence(s).\n---\n{{ $json.srtText }}\n",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.8,
+      "position": [
+        720,
+        280
+      ],
+      "id": "5d4b71ed-88a8-4c8f-92a1-3333279c4e9f",
+      "name": "translate file"
+    },
+    {
+      "parameters": {
+        "jsCode": "const srtText = $input.first().json.output;\nreturn [{\n  json: { fileName:\"vn-sub\" + $('Loop Over Items').first().json.name },\n  binary: {\n    data: Buffer.from(srtText, 'utf-8')\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1060,
+        280
+      ],
+      "id": "ac9b456a-c400-41b3-8606-042930e4fb93",
+      "name": "covert file txt to binary"
+    },
+    {
+      "parameters": {
+        "inputDataFieldName": "=data",
+        "name": "={{ $('Edit Fields').item.json.name.replace(/\\.srt$/, '.vn.srt') }}\n",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "={{ $(' get id folder ').item.json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1340,
+        280
+      ],
+      "id": "d81d6462-a414-4979-9d3b-bb470d781b91",
+      "name": "Google Drive",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "KrkxuVujgZYvh2Q2",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "645df66f-ddf0-407b-9592-dfa421f619e9",
+      "name": "When chat message received",
+      "webhookId": "0a8009f7-cb08-4126-92d9-5d50869b8c99"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        40,
+        260
+      ],
+      "id": "7617e75c-85f0-4649-a022-658fd1b00ae5",
+      "name": "Loop Over Items"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    " get id folder ": {
+      "main": [
+        [
+          {
+            "node": "get ALL ID+NAME file .srt in folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get ALL ID+NAME file .srt in folder": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "translate file",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "dowload file .srt": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "convert file binary to text 1": {
+      "main": [
+        [
+          {
+            "node": "convert file binary to text 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "convert file binary to text 2": {
+      "main": [
+        [
+          {
+            "node": "translate file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "translate file": {
+      "main": [
+        [
+          {
+            "node": "covert file txt to binary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "covert file txt to binary": {
+      "main": [
+        [
+          {
+            "node": "Google Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "dowload file .srt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": " get id folder ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "convert file binary to text 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "ce2f6b5e-407b-449b-b1e2-c0f1bb3db318",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "bec663ac6e68d17ea4b43aebc66a7fd54eec71690e0e0f5eb9b5ef7f035e052f"
+  },
+  "id": "UK5m61PQ2y9TTBQh",
+  "tags": []
+}
