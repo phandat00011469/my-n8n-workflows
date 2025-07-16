@@ -1,0 +1,30 @@
+services:
+  n8n:
+    image: n8nio/n8n
+    restart: always
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_HOST=tad.gachany.space
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=https
+      - WEBHOOK_TUNNEL_URL=https://tad.gachany.space/      # <-- giữ nguyên dấu / ở cuối cho biến này
+      - N8N_EDITOR_BASE_URL=https://tad.gachany.space      # <-- bỏ dấu / ở cuối
+      - N8N_PUBLIC_API_BASE_URL=https://tad.gachany.space  # <-- bỏ dấu / ở cuối
+      - GENERIC_TIMEZONE=Asia/Bangkok
+      - N8N_RUNNERS_ENABLED=true
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
+    volumes:
+      - n8n_data:/home/node/.n8n
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: always
+    environment:
+      - TUNNEL_TOKEN=YOUR_TUNNEL_TOKEN
+    command: tunnel --url http://n8n:5678 --no-autoupdate
+    depends_on:
+      - n8n
+
+volumes:
+  n8n_data:
